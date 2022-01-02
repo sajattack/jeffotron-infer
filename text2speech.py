@@ -9,12 +9,12 @@ from scipy.io.wavfile import write
 from hparams import create_hparams
 from model import Tacotron2
 from text import text_to_sequence
+
 sys.path.append('waveglow/')
 from waveglow.mel2samp import MAX_WAV_VALUE
 from waveglow.glow import WaveGlow
-#from denoiser import Denoiser
-from pydub import AudioSegment, effects
 
+from pydub import AudioSegment, effects
 import json
 
 class T2S:
@@ -27,21 +27,20 @@ class T2S:
         self.max_duration_s = self.config.get('max_duration_s')
         self.hparams.max_decoder_steps = int(86.0 * self.max_duration_s)
 
-        self.waveglow = torch.load('models/waveglow', map_location=torch.device('cpu'))['model']
-        self.waveglow.eval()
+        self.waveglow = torch.load('models/waveglow')['model']
+        self.waveglow = self.waveglow.to('cuda')
+        self.waveglow.cuda().eval().half()
 
         for m in self.waveglow.modules():
             if 'Conv' in str(type(m)):
                 setattr(m, 'padding_mode', 'zeros')
-                
         for k in self.waveglow.convinv:
             k.float()
         #self.denoiser = Denoiser(self.waveglow)
         self.update_model(model_choice, self.max_duration_s)
 
-    
     def load_model(self):
-        model = Tacotron2(self.hparams)
+        model = Tacotron2(self.hparams).cuda()
         if self.hparams.fp16_run:
             model.decoder.attention_layer.score_mask_value = finfo('float16').min
 
@@ -54,16 +53,18 @@ class T2S:
         if not filename:
             filename = str(time.time())
         sequence = np.array(text_to_sequence(text, [self.cleaner]))[None, :]
-        sequence = torch.autograd.Variable(torch.from_numpy(sequence)).long()
+        sequence = torch.autograd.Variable(torch.from_numpy(sequence)).cuda().long()
         mel_outputs, mel, _, alignments = self.model.inference(sequence)
-        mel_outputs = mel_outputs.to('cpu')
-        mel = mel.to('cpu') 
-        with torch.no_grad():
-            audio = self.waveglow.infer(mel, sigma=0.666)
-            audio = audio * MAX_WAV_VALUE
-        # audio = self.denoiser(audio, strength=0.01)[:, 0]
+        print("mel: ", mel)
+        #with torch.no_grad():
+        mel = mel.cuda()
+        audio = self.waveglow.infer(mel, sigma=0.666)
+        print("audio1: ", audio)
+        audio = audio * MAX_WAV_VALUE
+    # audio = self.denoiser(audio, strength=0.01)[:, 0]
         audio = audio.squeeze()
         audio = audio.cpu().numpy()
+        print("audio2: ", audio)
         audio = audio.astype('int16')
         audio_path =f"{filename}.wav"
         save_path = os.path.join('wavs',audio_path)
@@ -74,8 +75,6 @@ class T2S:
         post_norm.export(save_path, format="wav")
         print("audio saved at: {}".format(save_path))
         return audio_path
-        
-        
 
     def update_model(self, model_choice, max_duration_s):
         # in case someone tries to bypass form validation and overload servers
@@ -85,8 +84,8 @@ class T2S:
             self.hparams.max_decoder_steps = int(86.0 * max_duration_s)
         self.cleaner = 'english_cleaners'
         self.model_choice = model_choice
-        self.checkpoint_path = self.config.get('model').get(self.model_choice) 
+        self.checkpoint_path = self.config.get('model').get(self.model_choice)
         self.model = self.load_model()
-        self.model.load_state_dict(torch.load(self.checkpoint_path, map_location=torch.device('cpu'))['state_dict'])
-        _ = self.model.eval()
+        self.model.load_state_dict(torch.load(self.checkpoint_path, map_location=torch.device('cuda:0'))['state_dict'])
+        _ = self.model.cuda().eval().half()
         return self

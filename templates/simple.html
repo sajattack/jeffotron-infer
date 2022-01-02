@@ -66,9 +66,13 @@
                 <div class="form-group">
                     <label for="select">Model</label>
                     <select name="input_model" class="form-control">
+			<option value="attempt11_31000" {{ 'selected' if model_choice == 'attempt11_31000' }} >JGSpeech-1.5 31000 iterations</option>
+			<option value="attempt11_15000" {{ 'selected' if model_choice == 'attempt11_15000' }} >JGSpeech-1.5 15000 iterations</option>
 			<option value="attempt11_8000" {{ 'selected' if model_choice == 'attempt11_8000' }} >JGSpeech-1.5 8000 iterations</option>
                         <option value="attempt5_3600" {{ 'selected' if model_choice == 'attempt5_3600' }} >JGSpeech-0.4 3600 iterations</option>
                         <option value="attempt5_18000" {{ 'selected' if model_choice == 'attempt5_18000' }}>JGSpeech-0.4 18000 iterations</option>
+                        <option value="attempt2_3300" {{ 'selected' if model_choice == 'attempt2_3300' }}>Demon 1</option>
+                        <option value="attempt5_200" {{ 'selected' if model_choice == 'attempt5_200' }}>Demon 2</option>
                     </select>
                 </div>
                 <button class="collapsible" type="button">Advanced Options</button>
@@ -101,6 +105,14 @@
                 </div>
         </div>  
                 {% endif %}
+        <div id="ad">
+            <br>
+                Powered by 
+		<a href="https://leaf.cloud"> <img src="https://www.leaf.cloud/images/logo/leafcloud-logo.png" width="100px"/></a>
+		Created by <a href="https://twitter.com/sajattack">sajattack</a>.
+             </a>
+            <br/>
+        </div>
         </div>
 
 

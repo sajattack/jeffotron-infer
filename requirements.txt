@@ -6,3 +6,4 @@ numpy==1.16.4
 playsound==1.2.2
 tornado==6.0.3
 unicode==2.7
+pydub==0.25.1
