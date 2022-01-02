@@ -55,16 +55,13 @@ class T2S:
         sequence = np.array(text_to_sequence(text, [self.cleaner]))[None, :]
         sequence = torch.autograd.Variable(torch.from_numpy(sequence)).cuda().long()
         mel_outputs, mel, _, alignments = self.model.inference(sequence)
-        print("mel: ", mel)
-        #with torch.no_grad():
-        mel = mel.cuda()
-        audio = self.waveglow.infer(mel, sigma=0.666)
-        print("audio1: ", audio)
-        audio = audio * MAX_WAV_VALUE
-    # audio = self.denoiser(audio, strength=0.01)[:, 0]
+        with torch.no_grad():
+            mel = mel.cuda()
+            audio = self.waveglow.infer(mel, sigma=0.666)
+            audio = audio * MAX_WAV_VALUE
+        # audio = self.denoiser(audio, strength=0.01)[:, 0]
         audio = audio.squeeze()
         audio = audio.cpu().numpy()
-        print("audio2: ", audio)
         audio = audio.astype('int16')
         audio_path =f"{filename}.wav"
         save_path = os.path.join('wavs',audio_path)

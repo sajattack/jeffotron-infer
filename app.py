@@ -8,7 +8,7 @@ from tornado.ioloop import IOLoop
 from text2speech import T2S
 import os
 
-model = 'attempt11_8000' 
+model = 'attempt5_3600'
 t2s = T2S(model)
 sample_text = 'Enter a sentence.'
 
@@ -26,31 +26,28 @@ def texttospeech():
             audio = t2s.tts(text)
         else:
             audio = t2s.update_model(model, max_duration_s).tts(text)
-        return render_template('simple.html', voice=audio, sample_text=text, model_choice=t2s.model_choice, max_duration_s=max_duration_s)
+        return render_template('simple.html', voice=audio, sample_text="", model_choice=t2s.model_choice, max_duration_s=max_duration_s)
 
-            
 #Route to render GUI
 @app.route('/')
 def show_entries():
-    return render_template('simple.html', sample_text=sample_text, voice=None, model_choice=t2s.model_choice, max_duration_s=t2s.max_duration_s)
+    return render_template('simple.html', sample_text="", voice=None, model_choice=t2s.model_choice, max_duration_s=t2s.max_duration_s)
 
 #Route to stream music
 @app.route('/<voice>', methods=['GET'])
 def streamwav(voice):
-    def generate():    
+    def generate():
         with open(os.path.join('wavs',voice), "rb") as fwav:
             data = fwav.read(1024)
             while data:
                 yield data
                 data = fwav.read(1024)
-            
     return Response(generate(), mimetype="audio/")
 
 #launch a Tornado server with HTTPServer.
 if __name__ == "__main__":
-    port = 31337 
+    port = 31337
     http_server = HTTPServer(WSGIContainer(app))
     http_server.listen(port)
     io_loop = tornado.ioloop.IOLoop.current()
     io_loop.start()
-    
